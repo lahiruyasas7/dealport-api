@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  SELLER
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+}
+
+// ─────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String // bcrypt hash 
+  name      String
+  role      Role     @default(SELLER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@map("users")
+}
+
+model Category {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  products Product[] @relation("ProductCategories")
+
+  @@map("categories")
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  products Product[] @relation("ProductTags")
+
+  @@map("tags")
+}
+
+model Product {
+  id String @id @default(cuid())
+
+  // Basic details
+  name        String
+  description String?
+
+  // Pricing — Decimal, not Float, to avoid floating-point rounding errors on money
+  price            Decimal  @db.Decimal(10, 2)
+  discountedPrice  Decimal? @db.Decimal(10, 2)
+  taxIncluded      Boolean  @default(true)
+  expirationStart  DateTime?
+  expirationEnd    DateTime?
+
+  // Inventory
+  stockQuantity Int?        @default(0) // nullable to represent "Unlimited" toggle
+  isUnlimited   Boolean     @default(false)
+  stockStatus   StockStatus @default(IN_STOCK)
+
+  // Merchandising
+  isFeatured Boolean  @default(false)
+  colors     String[] @default([]) // e.g. ["#A7F3D0", "#000000"]
+
+  // Images — plain URL/base64 strings; a dedicated media table is out of scope
+  images String[] @default([])
+
+  status ProductStatus @default(DRAFT)
+
+  // Relations
+  categories Category[] @relation("ProductCategories")
+  tags       Tag[]      @relation("ProductTags")
+
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdById String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Supports GET /products search + pagination requirement
+  @@index([name])
+  @@index([status])
+  @@index([createdAt])
+  @@map("products")
+}
