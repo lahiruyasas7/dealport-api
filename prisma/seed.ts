@@ -36,6 +36,40 @@ async function main() {
   console.log(
     `  password: ${plainPassword} (plain — shown for local dev only)`,
   );
+  // ─── Categories ─────────────────────────────────────
+  const categories = [
+    { name: 'Electronic', slug: 'electronic' },
+    { name: 'Fashion', slug: 'fashion' },
+    { name: 'Home', slug: 'home' },
+    { name: 'Sports', slug: 'sports' },
+    { name: 'Books', slug: 'books' },
+  ];
+
+  for (const cat of categories) {
+    await prisma.category.upsert({
+      where: { slug: cat.slug },
+      update: {},
+      create: cat,
+    });
+  }
+  console.log(`✅ Seeded ${categories.length} categories`);
+
+  // ─── Tags ───────────────────────────────────────────
+  const tags = [
+    { name: 'New Arrival', slug: 'new-arrival' },
+    { name: 'Best Seller', slug: 'best-seller' },
+    { name: 'Sale', slug: 'sale' },
+    { name: 'Limited Edition', slug: 'limited-edition' },
+  ];
+
+  for (const tag of tags) {
+    await prisma.tag.upsert({
+      where: { slug: tag.slug },
+      update: {},
+      create: tag,
+    });
+  }
+  console.log(`✅ Seeded ${tags.length} tags`);
 }
 
 main()
