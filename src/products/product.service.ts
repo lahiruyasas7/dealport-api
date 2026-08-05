@@ -1,0 +1,45 @@
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateProductDto } from './dtos/create-product.dto';
+import { Prisma } from 'src/generated/prisma/client';
+
+const productInclude = {
+  categories: true,
+  tags: true,
+} satisfies Prisma.ProductInclude;
+
+@Injectable()
+export class ProductsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(dto: CreateProductDto, userId: string) {
+    const { categoryIds, tagIds, price, discountedPrice, ...rest } = dto;
+
+    try {
+      return await this.prisma.product.create({
+        data: {
+          ...rest,
+          price, // Prisma coerces number -> Decimal automatically here
+          discountedPrice: discountedPrice ?? undefined,
+          createdById: userId,
+          categories: categoryIds
+            ? { connect: categoryIds.map((id) => ({ id })) }
+            : undefined,
+          tags: tagIds ? { connect: tagIds.map((id) => ({ id })) } : undefined,
+        },
+        include: productInclude,
+      });
+    } catch (error) {
+      // P2025 = related record (category/tag id) not found on connect
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new BadRequestException(
+          'One or more categoryIds/tagIds do not exist',
+        );
+      }
+      throw error;
+    }
+  }
+}
