@@ -128,4 +128,23 @@ export class ProductsService {
       throw error;
     }
   }
+
+  async remove(id: string, userId: string): Promise<void> {
+    try {
+      await this.prisma.product.delete({
+        where: { id, createdById: userId },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        // Intentionally vague: do not leak whether the id exists or belongs to someone else.
+        throw new NotFoundException(
+          `Product with id "${id}" not found or access denied`,
+        );
+      }
+      throw error;
+    }
+  }
 }
