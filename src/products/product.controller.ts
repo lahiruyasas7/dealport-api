@@ -1,10 +1,20 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ProductsService } from './product.service';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { AuthenticatedUser } from 'src/auth/types/jwt-payload.interface';
 import { QueryProductDto } from './dtos/query-product.dto';
+import { UpdateProductDto } from './dtos/update-product.dto';
 
 @Controller('products')
 @UseGuards(JwtAuthGuard) // admin dashboard data — every route here requires login
@@ -27,5 +37,10 @@ export class ProductsController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.productsService.update(id, dto);
   }
 }
