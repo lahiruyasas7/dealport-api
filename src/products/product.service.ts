@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { Prisma } from 'src/generated/prisma/client';
+import { QueryProductDto } from './dtos/query-product.dto';
 
 const productInclude = {
   categories: true,
@@ -41,5 +42,37 @@ export class ProductsService {
       }
       throw error;
     }
+  }
+
+  async findAll(query: QueryProductDto) {
+    const { search, status, page = 1, limit = 10 } = query;
+ 
+    const where: Prisma.ProductWhereInput = {
+      ...(search && {
+        name: { contains: search, mode: 'insensitive' },
+      }),
+      ...(status && { status }),
+    };
+ 
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        include: productInclude,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+ 
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }
