@@ -25,4 +25,8 @@ export class QueryProductDto {
   @Min(1)
   @Max(100) // hard ceiling — prevents ?limit=999999 from being used as a DoS vector
   limit?: number = 10;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
 }
