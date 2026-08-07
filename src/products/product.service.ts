@@ -50,13 +50,12 @@ export class ProductsService {
   }
 
   async findAll(query: QueryProductDto) {
-    const { search, status, page = 1, limit = 10 } = query;
+    const { search, status, page = 1, limit = 10, categoryId } = query;
 
     const where: Prisma.ProductWhereInput = {
-      ...(search && {
-        name: { contains: search, mode: 'insensitive' },
-      }),
+      ...(search && { name: { contains: search, mode: 'insensitive' } }),
       ...(status && { status }),
+      ...(categoryId && { categories: { some: { id: categoryId } } }),
     };
 
     const [data, total] = await this.prisma.$transaction([
