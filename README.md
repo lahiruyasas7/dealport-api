@@ -96,6 +96,7 @@ See `.env.example`. No secrets are committed — copy it to `.env` and fill in r
 | `AWS_S3_BUCKET` | ✅ | Target bucket |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | ✅ | IAM user scoped to `s3:PutObject` on that bucket only |
 
+added mock data for sales cards and report graphs, transaction table.
 
 ## Local setup
 
