@@ -95,7 +95,7 @@ See `.env.example`. No secrets are committed — copy it to `.env` and fill in r
 | `AWS_REGION` | ✅ | For S3 presigned uploads |
 | `AWS_S3_BUCKET` | ✅ | Target bucket |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | ✅ | IAM user scoped to `s3:PutObject` on that bucket only |
-| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | – | Overrides the default seeded admin credentials |
+
 
 ## Local setup
 
@@ -115,8 +115,6 @@ npm run start:dev           # http://localhost:3003/api/v1
 email:    admin@dealport.com
 password: Admin@12345
 ```
-(Overridable via `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` — the ones above are the defaults baked into `prisma/seed.ts`.)
-
 
 ```
 ## Known limitations / things I'd do next with more time
