@@ -1,85 +1,127 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# DEALPORT API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS + Prisma + PostgreSQL backend for the DEALPORT admin dashboard take-home. Provides JWT auth and a fully validated Products/Categories/Tags API consumed by the [dealport-web](https://github.com/lahiruyasas7/dealport-web) frontend.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+**Live App:** `https://dealport-web.vercel.app/`
 
-## Description
+**Live API:** `https://dealport-api.onrender.com/api/v1`
+*(Hosted on Render's free tier — the instance spins down after inactivity, so the first request after a while can take 40–50s to wake up.)*
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Repositories
+1. Frontend: https://github.com/lahiruyasas7/dealport-web 
+2. Backend: https://github.com/lahiruyasas7/dealport-api
 
-## Project setup
+## Tech Stack
 
-```bash
-$ npm install
+### Backend
+
+1. NestJS
+2. Prisma
+3. PostgreSQL
+4. JWT bearer token
+5. AWS S3 (image storage)
+
+### Frontend
+
+1. Next.js
+2. Axios
+3. React Hook Form + Zod
+4. React-Query
+5. Zustand
+6. Tailwindcss
+7. Shadcn
+
+## Deployment
+
+1. Frontend: Vercel
+2. Backend: Render
+3. Database: Prisma.io Postgresql database
+
+
+## Project structure
+
+```
+src/
+├── auth/            # login, JWT strategy/guard, current-user decorator
+├── category/         # GET /categories (read-only, seeded)
+├── tags/              # GET /tags (read-only, seeded)
+├── products/          # full CRUD, search + pagination
+├── uploads/           # POST /uploads/presigned-url (S3)
+├── prisma/            # PrismaService (injectable client)
+└── main.ts            # global prefix, CORS, ValidationPipe
+prisma/
+├── schema.prisma
+├── migrations/
+└── seed.ts            # seeds one admin user + categories + tags
 ```
 
-## Compile and run the project
+## Data model
+
+- **User** — `email`, hashed `password`, `role` (`ADMIN` | `SELLER`)
+- **Product** — basic details, pricing (`Decimal`), inventory (`stockQuantity` / `isUnlimited` toggle / `stockStatus`), `status` (`DRAFT` | `PUBLISHED`), `images: string[]`, `colors: string[]`, many-to-many with `Category` and `Tag`, owned by a `User` (`createdById`)
+- **Category**, **Tag** — simple lookup tables, seeded, read-only via the API
+
+Indexes on `Product.name`, `Product.status`, `Product.createdAt` support the required search + pagination + filter-by-status queries.
+
+## API reference
+
+All routes are prefixed with `/api/v1`.
+
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | `/auth/login` | – | Returns `{ accessToken, user }` |
+| GET | `/products` | JWT | List, with `?search=&status=&categoryId=&page=&limit=` (max `limit` 100) |
+| POST | `/products` | JWT | Create (owner = current user) |
+| GET | `/products/:id` | JWT | Fetch one |
+| PATCH | `/products/:id` | JWT | Update (category/tag arrays are replaced via `set`, not merged) |
+| DELETE | `/products/:id` | JWT | Delete — scoped to `createdById`, so you can't delete another seller's product |
+| GET | `/categories` | JWT | Seeded list |
+| GET | `/tags` | JWT | Seeded list |
+| POST | `/uploads/presigned-url` | JWT | Returns a short-lived S3 `uploadUrl` + the resulting `publicUrl` |
+
+All `/products`, `/categories`, `/tags`, `/uploads` routes require `Authorization: Bearer <token>`.
+
+## Environment variables
+
+See `.env.example`. No secrets are committed — copy it to `.env` and fill in real values locally / in Render's dashboard for deployment.
+
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `JWT_SECRET` | ✅ | Sign/verify secret for access tokens |
+| `JWT_EXPIRES_IN` | – | Defaults to `24h` |
+| `PORT` | – | Defaults to `3003` |
+| `FRONTEND_URL` | ✅ | Exact origin allowed by CORS (e.g. `https://dealport-web.vercel.app`) |
+| `AWS_REGION` | ✅ | For S3 presigned uploads |
+| `AWS_S3_BUCKET` | ✅ | Target bucket |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | ✅ | IAM user scoped to `s3:PutObject` on that bucket only |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | – | Overrides the default seeded admin credentials |
+
+## Local setup
 
 ```bash
-# development
-$ npm run start
+npm install
+cp .env.example .env        # fill in DATABASE_URL, JWT_SECRET, AWS_*, FRONTEND_URL
 
-# watch mode
-$ npm run start:dev
+npx prisma migrate dev      # applies migrations
+npx prisma db seed          # seeds admin user + categories + tags
 
-# production mode
-$ npm run start:prod
+npm run start:dev           # http://localhost:3003/api/v1
 ```
 
-## Run tests
+## Seed credentials (for reviewers)
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
 ```
+email:    admin@dealport.com
+password: Admin@12345
+```
+(Overridable via `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` — the ones above are the defaults baked into `prisma/seed.ts`.)
 
-## Resources
 
-Check out a few resources that may come in handy when working with NestJS:
+```
+## Known limitations / things I'd do next with more time
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- No refresh-token flow — access tokens just expire after `JWT_EXPIRES_IN` and the user re-logs in. Fine for a scoped admin tool, not what I'd ship for a consumer product.
+- No rate limiting on `/auth/login` (e.g. `@nestjs/throttler`) — worth adding before this goes anywhere near production.
+- No integration tests for the Products module yet — `test/app.e2e-spec.ts` is still the Nest starter boilerplate.
+- Categories/Tags are read-only via the API (seeded only), matching the "out of scope" list in the brief.
