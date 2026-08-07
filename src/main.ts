@@ -33,6 +33,7 @@ async function bootstrap() {
 
   // API prefix
   app.setGlobalPrefix('api/v1');
-  await app.listen(3003);
+  const port = process.env.PORT || 3003;
+  await app.listen(port);
 }
 bootstrap();
